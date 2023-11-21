@@ -30,7 +30,9 @@ logistic regression had the highest classification rate for our second research 
 to include all predictors variables in our ridge and logistic regression models.
 
 ![WIL3](https://github.com/Karene123/Women_in_the_labor_force/assets/70621033/10b785fc-aae2-4c54-9f2f-31535ace80ec)
+
 ![WIL2](https://github.com/Karene123/Women_in_the_labor_force/assets/70621033/7e307f5b-b4c4-4cef-bec1-8e9ccb17c11e)
+
 ![W](https://github.com/Karene123/Women_in_the_labor_force/assets/70621033/3d6cc85d-60d2-4e4f-9be4-c1b8f76b6d23)
 
 
