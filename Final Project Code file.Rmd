@@ -1,0 +1,341 @@
+---
+title: "Final Project Code"
+author: "Dalia Habiby, Frankie Tyndall, Karene C Matoka Nana, Daniel Bernal"
+date: "2022-12-03"
+output: pdf_document
+
+---
+
+## Cleanup
+```{r}
+library(haven)
+library(tidyverse)
+library(tidyr)
+library(dplyr)
+library(class)
+library(MASS)
+newdata<- read.csv("data.csv")
+WBL<- readxl::read_xlsx("wbl_50yearpanel_web_27feb2020.xlsx")
+
+newdata%>%
+  filter(Series.Name == "Literacy rate, adult female (% of females ages 15 and above)")
+
+```
+
+
+```{r}
+data =  reshape(data = newdata, idvar = "Country.Name", v.names = c("X2021..YR2021."), timevar = "Series.Name", direction = "wide")
+
+names(data)<- c("Country.Name", "Country.Code", "Series.Code", "WBLI", "LiteracyTotal", "LiteracyMale", "LiteracyFemale", "GDP", "GDPpercap", "Unemployment", "PerUsingInternet", "Values")
+
+joined<- left_join(WBL, data, by = c("wbcodev2"= "Country.Code"))
+joined
+```
+
+
+
+```{r}
+names(joined)
+
+WBLtidy<- joined[c(1:7, 22, 31, 34, 58:60, 65:71)]
+WBLtidy
+```
+
+```{r}
+perfemale<- read.csv("perfemale.csv", skip = 3)
+perfemale<- perfemale%>%
+  select(Country.Code, X2021)%>%
+  rename(PercPopFemale = X2021)
+
+a<- left_join(WBLtidy, perfemale, by = c("wbcodev2" = "Country.Code"))
+a%>%
+  select(economy, PercPopFemale)
+
+totalpop<- read.csv("totalpop.csv", skip = 3)
+totalpop<- totalpop%>%
+  select(Country.Code, X2021)%>%
+  rename(TotalPop = X2021)
+totalpop
+WBLdata<- left_join(a, totalpop, by = c("wbcodev2" = "Country.Code"))
+WBLdata
+```
+
+```{r}
+library(naniar)
+WBLtidy1 <- WBLdata %>% replace_with_na_all(condition = ~.x == "N/A")
+
+WBLtidy1$`Age (women)` <- as.numeric(as.character(WBLtidy1$`Age (women)`))
+WBLtidy1$`Age (men)` <- as.numeric(as.character(WBLtidy1$`Age (men)`))
+
+glimpse(WBLtidy1)
+WBLtidy1
+names(WBLtidy1)<- c("ID", "Country", "CountryCode", "Region", "IncomeGroup", "ReportYR", "WBLIndex", "IndustrialJob", "PaidMaternity", "PaidPaternity", "SameRetirement", "RetAgeWomen", "RetAgeMen", "LiteracyTotal", "LiteracyMale", "LiteracyFemale", "GDP", "GDPpercap", "Unemployment", "PerUsingInternet", "PercPopFemale", "TotalPop")
+WBLfinal<- WBLtidy1[-c(6, 14, 15, 16, 20)]
+```
+## Analysis
+
+### Linear Regression
+```{r}
+# Can we predict a country's WBL (Women, Business and the Law) Index based on the length of paid maternity leave and retirement age?
+library(glmnet)
+library(boot)
+library(stats)
+library(leaps)
+
+
+reg <- lm(WBLIndex~ PaidMaternity + SameRetirement + GDP+ PercPopFemale + TotalPop, data = WBLfinal)
+summary(reg)
+
+reg_ex <- regsubsets(WBLIndex~ PaidMaternity + SameRetirement + GDP+ PercPopFemale + TotalPop, data = WBLfinal, nvmax = 5)
+reg_ex_summary<- summary(reg_ex)
+names(summary(reg_ex))
+
+#adjr2
+which.max(reg_ex_summary$adjr2)
+reg_ex_summary$which[5,][reg_ex_summary$which[5,] ==TRUE]
+
+#BIC
+which.min(reg_ex_summary$bic) 
+reg_ex_summary$which[2,][reg_ex_summary$which[2,] ==TRUE]
+
+#Cp
+which.min(abs(reg_ex_summary$cp - 0:4)) # The best by Cp
+reg_ex_summary$which[5,][reg_ex_summary$which[5,] ==TRUE]
+
+complete<- WBLfinal%>%
+  select(WBLIndex, PaidMaternity, SameRetirement, GDP, PercPopFemale, TotalPop)%>%
+  na.omit()
+
+lmout<- lm(WBLIndex~ PaidMaternity + SameRetirement+ GDP+ PercPopFemale + TotalPop, data = WBLfinal)
+summary(lmout)
+
+set.seed(12)
+reg_k10 <-  glm(WBLIndex~ PaidMaternity + SameRetirement+ GDP+ PercPopFemale + TotalPop, data = complete)
+regCVk10 <- cv.glm(complete, reg_k10)
+regCVk10$delta[2]
+
+
+```
+
+MSEP is 232.9637.
+
+
+### Ridge
+
+```{r}
+x <- model.matrix(reg)
+dim(x)
+x <- x[,-1]
+dim(x)
+y<- complete$WBLIndex
+rr <- glmnet(x, y, alpha = 0)
+plot(rr, label = TRUE)
+plot(rr, xvar = "lambda", label = TRUE)
+set.seed(123)
+rr_cv <- cv.glmnet(x, y, alpha=0)
+rr_cv
+plot(rr_cv)
+coef(rr_cv)
+coef(rr_cv, s = "lambda.min") 
+```
+
+MSEP is 211.3
+
+### Lasso
+
+```{r}
+lr <- glmnet(x, y)
+plot(lr, label = TRUE)
+plot(lr, xvar = "lambda", label = TRUE)
+set.seed(123)
+lr_cv <- cv.glmnet(x, y)
+lr_cv
+plot(lr_cv)
+coef(lr_cv)
+coef(lr_cv, s = "lambda.min")
+```
+
+MSE is 212.5
+
+### Multicollinearity
+```{r}
+library(car)
+vif(reg)
+
+reg_vif <- lm(GDP ~ . -WBLIndex, data = complete)
+summary(reg_vif)
+
+cor(complete%>%
+      select(- SameRetirement)) 
+```
+
+
+
+### KNN
+```{r}
+data1 <- WBLfinal %>%
+  select(Country, IndustrialJob, PaidPaternity, IncomeGroup, WBLIndex,
+         PercPopFemale, SameRetirement, PaidMaternity)
+
+data1 <- data1 %>%
+  drop_na()
+
+data1$IndustrialJob <- as.factor(data1$IndustrialJob)
+data1$IncomeGroup <- as.factor(data1$IncomeGroup)
+data1$SameRetirement <- as.factor(data1$SameRetirement)
+data1$PaidPaternity <- as.numeric(data1$PaidPaternity)
+data1$PaidMaternity <- as.numeric(data1$PaidMaternity)
+data1$WBLIndex <- as.numeric(data1$WBLIndex)
+data1$PercPopFemale <- as.numeric(data1$PercPopFemale)
+
+data1 <- data1 %>%
+  mutate(Retirement = coalesce(case_when( SameRetirement == "Yes" ~ 1,
+                                SameRetirement == "No" ~ 0)))
+
+data1 <- data1 %>%
+  mutate(Incomelevel = coalesce(case_when( IncomeGroup == "Low income" ~ 1,
+                                IncomeGroup == "Lower middle income" ~ 2,
+                                IncomeGroup == "Upper middle income" ~ 3,
+                                IncomeGroup == "High income" ~ 4)))
+
+
+train = data1[,c("PaidPaternity", "Incomelevel", "WBLIndex", "PercPopFemale", 
+                 "Retirement", "PaidMaternity")] # Our training set X
+cl = data1$IndustrialJob  # Our training set y
+
+test = tibble("PaidMaternity" = 50, "PaidPaternity" = 15, 
+              "Incomelevel" = 1, "Retirement" = 0,
+              "PerPopFemale" = 50.39125, "WLBIndex" = 100.000)
+knn(train, test, cl, k = 15)
+
+
+```
+
+```{r}
+set.seed(12)
+training_pct <- .5
+Z = sample(nrow(data1), floor(training_pct*nrow(data1)))
+Xtrain = data1[Z, c("PaidPaternity", "Incomelevel", "WBLIndex", "PercPopFemale", 
+                 "Retirement", "PaidMaternity")]
+Ytrain = data1$IndustrialJob[Z]  # Our training set y 
+Xtest = data1[-Z, c("PaidPaternity", "Incomelevel", "WBLIndex", "PercPopFemale", 
+                 "Retirement", "PaidMaternity")]
+Yhat <- knn(Xtrain, Xtest, Ytrain, k = 15) 
+Ytest <- data1$IndustrialJob[-Z]
+conf_matrix <- table(Ytest, Yhat)
+conf_matrix
+```
+
+```{r}
+# Initialize data
+err_class <- rep(1:100)
+tpr <- rep(1:100)
+fpr <- rep(1:100)
+# run the loop
+for (k in 1:100){
+  Yhat <- knn(Xtrain, Xtest, Ytrain, k = k) 
+  err_class[k] <- mean(Yhat != Ytest) # The prediction is not correct
+  tpr[k] <- sum(Yhat == 1 & Ytest == 1) / sum(Ytest == 1) # TP/P
+  fpr[k] <- sum(Yhat == 1 & Ytest == 0) / sum(Ytest == 0) # FP/N
+}
+ggplot(tibble(err_class, k = 1:100), aes(x = k, y = err_class)) +
+  geom_line()
+```
+```{r}
+which.min(err_class) #gives the k
+err_class[which.min(err_class)] #Porb. of misclassification
+1 - err_class[which.min(err_class)] # Probability of a correct classification
+(table(Ytest, Yhat)[1, 1] + table(Ytest, Yhat)[2, 2])/(training_pct*nrow(data1)) #accuracy
+```
+
+```{r}
+set.seed(12)
+Yhat <-  knn(Xtrain, Xtest, Ytrain, k = which.min(err_class))  #accuracy for the best k
+table(Ytest, Yhat)
+```
+
+
+### Logistic Regression
+
+```{r}
+set.seed(12)
+Xtrain1 <- data1[Z,]
+Xtest1 <- data1[-Z,]
+logreg <- glm(as.factor(IndustrialJob) ~ PaidPaternity + as.factor(IncomeGroup) + 
+                WBLIndex + PercPopFemale + PaidMaternity + as.factor(SameRetirement), 
+              data = Xtrain1, family = "binomial")
+summary(logreg)
+
+
+```
+
+```{r}
+Prob <- predict(logreg, type = "response", newdata = Xtest1)
+threshold <- seq(0, 1, .0001)
+TPR <-  FPR <- err.rate <- rep(0, length(threshold))
+for (i in seq_along(threshold)) {
+Yhat1 <- rep(NA_character_, nrow(Xtest1)) 
+Yhat1 <-  ifelse(Prob >= threshold[[i]], "Yes", "No")
+err.rate[i] <- mean(Yhat1 != Xtest1$IndustrialJob)
+TPR[[i]] <- sum(Yhat1 == "Yes" & Xtest1$IndustrialJob == "Yes")/
+  sum(Xtest1$IndustrialJob == "Yes")
+FPR[[i]] <- sum(Yhat1 == "Yes" & Xtest1$IndustrialJob == "No")/
+  sum(Xtest1$IndustrialJob == "No")
+}
+ggplot(tibble(threshold, err.rate), aes(threshold, err.rate)) + 
+   geom_point()
+```
+
+```{r}
+table(Xtest1$IndustrialJob)
+
+which.min(err.rate)
+
+min(err.rate)
+
+mean(Xtest1$IndustrialJob == "Yes") # % of industrial = yes
+
+threshold[which.min(err.rate)]
+
+Yhat <- ifelse(Prob >= threshold[which.min(err.rate)], "Yes", "No")
+table(Yhat, data1[Z,]$IndustrialJob)
+
+ggplot(tibble(TPR,FPR),
+       aes(FPR, TPR)) + 
+  geom_point()
+```
+
+
+### LDA or QDA
+
+```{r}
+LDA_result <- lda(as.factor(IndustrialJob) ~ PaidPaternity + 
+                  as.factor(IncomeGroup) + WBLIndex + PercPopFemale 
+                  + PaidMaternity + as.factor(SameRetirement), data = Xtrain1)
+LDA_result
+Predictedresult <- predict(LDA_result, data.frame(Xtest1))$class
+table(Xtest1$IndustrialJob, Predictedresult)
+# Prediction Correct Classification Rate
+ldares <- round(mean(Xtest1$IndustrialJob == Predictedresult), 3)
+ldares
+
+LDA_result5 <- lda(as.factor(IndustrialJob) ~ PaidPaternity + 
+                  WBLIndex + PercPopFemale
+                  + PaidMaternity + as.factor(SameRetirement), data = Xtrain1)
+LDA_result5
+Predictedresult5 <- predict(LDA_result5, data.frame(Xtest1))$class
+
+qda_result <- qda(as.factor(IndustrialJob) ~ PaidPaternity + 
+                  as.factor(IncomeGroup) + WBLIndex + PercPopFemale 
+                  + PaidMaternity + as.factor(SameRetirement), data = Xtrain1)
+Predictedresult2 <- predict(qda_result, data.frame(Xtest1))$class
+table(Xtest1$IndustrialJob, Predictedresult2)
+qda_result <- round(mean(Xtest1$IndustrialJob == Predictedresult), 3)
+qda_result
+
+QDA_result5 <- qda(as.factor(IndustrialJob) ~ PaidPaternity + 
+                  WBLIndex + PercPopFemale
+                  + PaidMaternity + as.factor(SameRetirement), data = Xtrain1)
+QDA_result5
+PredictedresultQ5 <- predict(QDA_result5, data.frame(Xtest1))$class
+```
