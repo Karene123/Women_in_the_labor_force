@@ -1,3 +1,5 @@
+***Academic Project for STAT 627 (Statistical Machine Learning)***
+
 It was reported by the World Bank that approximately 2.4 billion women do not possess the same
 economic opportunity as their male counterparts. As part of this number, we count 178 countries
 preventing women from fully participating in the labor force, 86 countries restricting certain jobs
