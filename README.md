@@ -95,7 +95,8 @@ Install and Import those libraries in order to access the project.
 
     <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-## Summary of Results and Statistical Methods
+## Summary of Results and Methods Used
+
 
 As part of this project, the following statistical methods were utilized:
 - Ordinary Least Squares Linear Regression
