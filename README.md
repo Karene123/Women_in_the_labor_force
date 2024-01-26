@@ -14,11 +14,9 @@
 3. [Prerequisites](#Prerequisites)
 4. [Utilized Python Libraries](#Utilized-Python-Libraries)
 5. [Installation](#Installation)
-6. [Challenges](#Challenges)
-7. [Summary of Results and Methods Used](#Summary-of-Results-and-Methods-Used)
-8. [Contributions](#Contributions)
-9. [Acknowledgments](#Acknowledgments)
-10. [Graphs](#Graphs)
+6. [Summary of Results and Methods Used](#Summary-of-Results-and-Methods-Used)
+7. [Acknowledgments](#Acknowledgments)
+8. [Graphs](#Graphs)
 
 # Women, Business, and Law (WBL) from the World Bank 
 
@@ -97,11 +95,29 @@ Install and Import those libraries in order to access the project.
 
     <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-## Summary of Results
-  
-We concluded that the ridge regression was able to best predict a country’s WBL while logistic regression had the highest classification rate for our second research question. We decided
-to include all predictors variables in our ridge and logistic regression models.
+## Summary of Results and Statistical Methods
 
+As part of this project, the following statistical methods were utilized:
+- Ordinary Least Squares Linear Regression
+- Ridge Regression
+- Lasso Regression
+- KNN
+- Linear Discriminant Analysis (LDA)
+- Quadratic Discriminant Analysis (QDA)
+  
+We concluded that the ridge regression was able to best predict a country’s WBL since it had the lowest mean squared error while logistic regression had the highest classification rate for our second research question. We decided to include all predictors variables in our ridge and logistic regression models.
+ 
+<!-- ACKNOWLEDGMENTS -->
+## Acknowledgments
+
+I worked closely with my classmates (Dalia, Frankie, and Daniel) to bring this project to fruition, fostering a collaborative environment where each team member's unique strengths contributed to the project's success. Through open communication and shared dedication, we overcame challenges and celebrated our collective achievements, solidifying the importance of teamwork in delivering outstanding results.
+
+- [WBL image](https://www.forbes.com/lists/top-companies-women/?sh=66cb12577910)
+
+The presentation is under: ESG Regression Final
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Graphs
 ![WIL3](https://github.com/Karene123/Women_in_the_labor_force/assets/70621033/10b785fc-aae2-4c54-9f2f-31535ace80ec)
 
 ![WIL2](https://github.com/Karene123/Women_in_the_labor_force/assets/70621033/7e307f5b-b4c4-4cef-bec1-8e9ccb17c11e)
