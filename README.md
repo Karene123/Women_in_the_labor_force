@@ -64,6 +64,41 @@ This link leads directly to the website.
 
 Install and Import those libraries in order to access the project.
 
+### Utilized Python Libraries:
+
+* [Haven](https://cran.r-project.org/web/packages/haven/index.html)
+* [Tidyr](https://cran.r-project.org/web/packages/tidyr/index.html)
+* [Dplyr](https://dplyr.tidyverse.org/)
+* [Class](https://cran.r-project.org/web/packages/class/index.html)
+* [Mass](https://cran.r-project.org/web/packages/MASS/index.html)
+
+### Installation
+
+* Haven
+  ```sh
+  install.packages("haven")
+  ```
+* Tidyr
+  ```sh
+  install.packages("tidyr")
+  ```
+* Dplyr
+  ```sh
+  install.packages("dplyr")
+  ```
+* Class
+  ```sh
+  install.packages("class")
+  ```
+* Mass
+  ```sh
+  install.packages("mass")
+  ```
+
+    <p align="right">(<a href="#readme-top">back to top</a>)</p>
+## Challenges
+  The initial assumption of the independence model is violated due to correlations among data points within each country over time. To address this issue, we applied a linear mixed-effects model, considering the correlation within countries. After conducting residual analysis and implementing required log transformations, we assessed and satisfied the assumptions of constant variance and linearity for both the response and predictor variables.
+  
 We concluded that the ridge regression was able to best predict a country’s WBL while
 logistic regression had the highest classification rate for our second research question. We decided
 to include all predictors variables in our ridge and logistic regression models.
