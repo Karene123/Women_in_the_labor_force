@@ -96,11 +96,10 @@ Install and Import those libraries in order to access the project.
   ```
 
     <p align="right">(<a href="#readme-top">back to top</a>)</p>
-## Challenges
-  The initial assumption of the independence model is violated due to correlations among data points within each country over time. To address this issue, we applied a linear mixed-effects model, considering the correlation within countries. After conducting residual analysis and implementing required log transformations, we assessed and satisfied the assumptions of constant variance and linearity for both the response and predictor variables.
+
+## Summary of Results
   
-We concluded that the ridge regression was able to best predict a country’s WBL while
-logistic regression had the highest classification rate for our second research question. We decided
+We concluded that the ridge regression was able to best predict a country’s WBL while logistic regression had the highest classification rate for our second research question. We decided
 to include all predictors variables in our ridge and logistic regression models.
 
 ![WIL3](https://github.com/Karene123/Women_in_the_labor_force/assets/70621033/10b785fc-aae2-4c54-9f2f-31535ace80ec)
