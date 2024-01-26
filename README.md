@@ -1,4 +1,28 @@
-***Academic Project for STAT 627 (Statistical Machine Learning)***
+# Academic Project for STAT 627 (Statistical Machine Learning)
+
+<!-- PROJECT LOGO -->
+<br />
+  <a href="https://github.com/Karene123/Women_in_the_labor_force">
+    <img src="https://github.com/Karene123/Women_in_the_labor_force/assets/70621033/3cbbaccc-345f-452e-acf3-24b4e0c07304" alt="Logo" width="1500" height="500">
+  </a>
+  
+<!-- TABLE OF CONTENTS -->
+### Table of Contents
+
+1. [Project Overview](#Project-Overview)
+2. [Getting Started](#Getting-Started)
+3. [Prerequisites](#Prerequisites)
+4. [Utilized Python Libraries](#Utilized-Python-Libraries)
+5. [Installation](#Installation)
+6. [Challenges](#Challenges)
+7. [Summary of Results and Methods Used](#Summary-of-Results-and-Methods-Used)
+8. [Contributions](#Contributions)
+9. [Acknowledgments](#Acknowledgments)
+10. [Graphs](#Graphs)
+
+# Women, Business, and Law (WBL) from the World Bank 
+
+<!-- Project Overview -->
 
 It was reported by the World Bank that approximately 2.4 billion women do not possess the same
 economic opportunity as their male counterparts. As part of this number, we count 178 countries
@@ -26,6 +50,12 @@ a man can, based on:
 - the WBL Index
 - the retirement age
 - the percentage of females in the population.
+
+<!-- GETTING STARTED -->
+## Getting Started
+
+All the datapoints were downloaded from [The World Bank DataBank](https://databank.worldbank.org/source/environment-social-and-governance-(esg)-data) 
+This link leads directly to the website.
 
 We concluded that the ridge regression was able to best predict a country’s WBL while
 logistic regression had the highest classification rate for our second research question. We decided
