@@ -23,6 +23,7 @@
 # Women, Business, and Law (WBL) from the World Bank 
 
 <!-- Project Overview -->
+## About The Project
 
 It was reported by the World Bank that approximately 2.4 billion women do not possess the same
 economic opportunity as their male counterparts. As part of this number, we count 178 countries
@@ -54,8 +55,14 @@ a man can, based on:
 <!-- GETTING STARTED -->
 ## Getting Started
 
-All the datapoints were downloaded from [The World Bank DataBank](https://databank.worldbank.org/source/environment-social-and-governance-(esg)-data) 
+All the datapoints were downloaded from [The World Bank DataBank](https://databank.worldbank.org/source/environment-social-and-governance-(esg)-data). 
 This link leads directly to the website.
+
+### Prerequisites
+
+[R-4.3.2](https://cran.r-project.org/bin/windows/base/)
+
+Install and Import those libraries in order to access the project.
 
 We concluded that the ridge regression was able to best predict a country’s WBL while
 logistic regression had the highest classification rate for our second research question. We decided
