@@ -12,7 +12,7 @@
 1. [Project Overview](#Project-Overview)
 2. [Getting Started](#Getting-Started)
 3. [Prerequisites](#Prerequisites)
-4. [Utilized Python Libraries](#Utilized-Python-Libraries)
+4. [Utilized R Libraries](#Utilized-R-Libraries)
 5. [Installation](#Installation)
 6. [Summary of Results and Methods Used](#Summary-of-Results-and-Methods-Used)
 7. [Acknowledgments](#Acknowledgments)
@@ -62,7 +62,7 @@ This link leads directly to the website.
 
 Install and Import those libraries in order to access the project.
 
-### Utilized Python Libraries:
+### Utilized R Libraries:
 
 * [Haven](https://cran.r-project.org/web/packages/haven/index.html)
 * [Tidyr](https://cran.r-project.org/web/packages/tidyr/index.html)
