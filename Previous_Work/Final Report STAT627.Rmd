@@ -1,0 +1,447 @@
+---
+title: 'Final Report: Women In Labor'
+author: "Dalia Habiby, Frankie Tyndall, Karene C Matoka Nana, Daniel Bernal"
+date: "2022-12-08"
+output:
+  pdf_document: default
+toc: yes
+fontsize: 11pt
+geometry: margin=1in
+theme: sandstone
+fig_caption: yes
+---
+\pagenumbering{gobble}
+\newpage
+\pagenumbering{arabic}
+# Executive Summary
+
+|       It was reported by the World Bank that approximately 2.4 billion women do not possess the same economic opportunity as their male counterparts. As part of this number, we count 178 countries preventing women from fully participating in the labor force, 86 countries restricting certain jobs to women, and 95 countries where equal pay is not guaranteed ("Nearly 2.4 Billion", 2022). Those data were made available by the World Bank through their Women, Business, and Law (WBL) project. The goal behind this initiative was to inform and provide “data on the laws and regulations that affect women’s economic opportunity”("About Us"). Since 2009, they have been collecting data and researching  how to improve women’s economic opportunities and empowerment. Our study was conducted using their dataset published in 2021. 
+|       We were first interested in knowing if we could predict a country’s WBL (Women, Business and the Law) Index based on the length of paid maternity leave, the retirement age, the country’s gross domestic product (GDP), the percentage of females in the population, and the total population. The WBL index is made of 35 questions which are divided into 8 categories. Each category is rated “based on the percentage of questions with no restrictions on women’s rights” (Indicator: Gender in the Economy). The index is calculated by averaging the scores from those 8 categories. We additionally wanted to classify  whether a woman can work in an industrial job in the same way a man can, based on a country’s income level, the length of paid paternity leave, the length of paid maternity leave, the WBL Index, the retirement age, and the percentage of females in the population. We concluded that the ridge regression was able to best predict a country’s WBL while logistic regression had the highest classification rate for our second research question. We decided to include all predictors variables in our ridge and logistic regression models.  
+      
+
+# Data and Methods
+
+|       This research focuses on the analysis of women’s global labor inequality measured by the Women, Business and the Law Index and it takes into account a variety of factors such as country’s gross domestic product, whether women can obtain an industrial job, paid maternity, paid paternity, retirement conditions, country’s population, and percentage of women’s population. The data set used covers the most recent year reported (2021) and includes a total of 190 countries which represent the total number of observations. Country selection was based on data availability as many countries don’t have data available for the variables used in this analysis. As the accuracy of the results is subject to the data quality, it was considered to obtain all the data from the World Bank’s data repository as this is a reliable source that can provide information for all the factors included in this analysis.  
+|       In order to obtain only the relevant variables, two steps were executed. First, we considered the Women, Business and Law report for the year 2021. This data set contains the WBL index, the income group for each country, whether a woman can work in an industrial job as a man, length of paid maternity leave, length of paid paternity leave, whether a woman has the same mandatory retirement age as a man, retirement age for women, and retirement age for men. The second step included the addition of some socioeconomic variables obtained from the World Bank’s World Development Indicators that include GDP, unemployment rate, total population, and percent of women population for each country. 
+
+|       Once these data sources were merged, the final data set contains the following information:
+
+```{r, include = FALSE}
+library(haven)
+library(tidyverse)
+library(tidyr)
+library(dplyr)
+library(class)
+library(MASS)
+newdata<- read.csv("data.csv")
+WBL<- readxl::read_xlsx("wbl_50yearpanel_web_27feb2020.xlsx")
+
+newdata%>%
+  filter(Series.Name == "Literacy rate, adult female (% of females ages 15 and above)")
+
+data =  reshape(data = newdata, idvar = "Country.Name", v.names = c("X2021..YR2021."), timevar = "Series.Name", direction = "wide")
+
+names(data)<- c("Country.Name", "Country.Code", "Series.Code", "WBLI", "LiteracyTotal", "LiteracyMale", "LiteracyFemale", "GDP", "GDPpercap", "Unemployment", "PerUsingInternet", "Values")
+
+joined<- left_join(WBL, data, by = c("wbcodev2"= "Country.Code"))
+joined
+
+WBLtidy<- joined[c(1:7, 22, 31, 34, 58:60, 65:71)]
+WBLtidy
+
+perfemale<- read.csv("perfemale.csv", skip = 3)
+perfemale<- perfemale%>%
+  dplyr::select(Country.Code, X2021)%>%
+  rename(PercPopFemale = X2021)
+
+a<- left_join(WBLtidy, perfemale, by = c("wbcodev2" = "Country.Code"))
+a%>%
+  dplyr::select(economy, PercPopFemale)
+
+totalpop<- read.csv("totalpop.csv", skip = 3)
+totalpop<- totalpop%>%
+  dplyr::select(Country.Code, X2021)%>%
+  rename(TotalPop = X2021)
+totalpop
+WBLdata<- left_join(a, totalpop, by = c("wbcodev2" = "Country.Code"))
+WBLdata
+library(naniar)
+WBLtidy1 <- WBLdata %>% replace_with_na_all(condition = ~.x == "N/A")
+
+WBLtidy1$`Age (women)` <- as.numeric(as.character(WBLtidy1$`Age (women)`))
+WBLtidy1$`Age (men)` <- as.numeric(as.character(WBLtidy1$`Age (men)`))
+
+glimpse(WBLtidy1)
+WBLtidy1
+names(WBLtidy1)<- c("ID", "Country", "CountryCode", "Region", "IncomeGroup", "ReportYR", "WBLIndex", "IndustrialJob", "PaidMaternity", "PaidPaternity", "SameRetirement", "RetAgeWomen", "RetAgeMen", "LiteracyTotal", "LiteracyMale", "LiteracyFemale", "GDP", "GDPpercap", "Unemployment", "PerUsingInternet", "PercPopFemale", "TotalPop")
+WBLfinal<- WBLtidy1[-c(6, 12, 13, 14, 15, 16, 18, 20)]
+```
+
+```{r, echo=FALSE}
+glimpse(WBLfinal)
+```
+|       While assessing the steps for our data collection, we identified ethical challenges that can arise from our own biases or the biases of others affecting our data, thoughts, and actions. We considered availability heuristic bias given the data sources that we encountered, our sources must have the information and richness required for our analysis. Furthermore, we are aware of the bandwagon effect, accountability is what matters most and all opinions are important at the moment of selecting our data, that is why a consensus was reached to use the World Bank data as our main source. Lastly, we took into consideration the rules and policies related to the American University’s Student Code of Conduct to ensure transparency and student compliance with our deliverables.
+
+# Results
+```{r, include= FALSE}
+library(glmnet)
+library(boot)
+library(stats)
+library(leaps)
+
+
+reg <- lm(WBLIndex~ PaidMaternity + SameRetirement + GDP+ PercPopFemale + TotalPop, data = WBLfinal)
+summary(reg)
+
+reg_ex <- regsubsets(WBLIndex~ PaidMaternity + SameRetirement + GDP+ PercPopFemale + TotalPop, data = WBLfinal, nvmax = 5)
+reg_ex_summary<- summary(reg_ex)
+names(summary(reg_ex))
+
+#adjr2
+which.max(reg_ex_summary$adjr2)
+reg_ex_summary$which[5,][reg_ex_summary$which[5,] ==TRUE]
+
+#BIC
+which.min(reg_ex_summary$bic) 
+reg_ex_summary$which[2,][reg_ex_summary$which[2,] ==TRUE]
+
+#Cp
+which.min(abs(reg_ex_summary$cp - 0:4)) # The best by Cp
+reg_ex_summary$which[5,][reg_ex_summary$which[5,] ==TRUE]
+
+complete<- WBLfinal%>%
+  dplyr::select(WBLIndex, PaidMaternity, SameRetirement, GDP, PercPopFemale, TotalPop)%>%
+  na.omit()
+```
+
+
+```{r, include = FALSE, warning=FALSE}
+
+lmout<- lm(WBLIndex~ PaidMaternity + SameRetirement+ GDP+ PercPopFemale + TotalPop, data = WBLfinal)
+summary(lmout)
+regtable<- lmout %>%
+  broom::tidy()
+
+set.seed(12)
+reg_k10 <-  glm(WBLIndex~ PaidMaternity + SameRetirement+ GDP+ PercPopFemale + TotalPop, data = complete)
+regCVk10 <- cv.glm(complete, reg_k10)
+
+de<- data.frame("Model Prediction MSE", 232.9637, "", "", "")
+
+regtable2<-regtable%>%
+  dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3))))
+```
+
+|       The first research question we investigated concerned predicting a country’s Women, Business and the Law (WBL) Index through regression analysis. In order to find the best model, we applied ordinary least squares linear regression, ridge regression, and lasso regression. Table 1 above reports our findings from running a linear model on the five identified predictors as well as utilizing Leave One Out Cross Validation to find the prediction mean squared error of the model. Furthermore, in an effort to make sure our models are as robust as possible, we investigated multicollinearity through variance inflation factor as well as the correlation between our predictors.  
+
+\newpage
+```{r, echo= FALSE, warning=FALSE}
+names(de)<- names(regtable2)
+tbl<- rbind(regtable2, de)
+
+  kableExtra::add_footnote(knitr::kable(tbl, caption = "OLS Linear Regression on WBL Index",
+    col.names = c("Predictor", "Estimate", "Std. Error", "t value", "Pr(>|t|)"))%>%
+    kableExtra::kable_styling(position = "center", full_width = F), label = "All of these predictors are statistically significant at the 0.05 level, except the same retirement age variable, which is statistically significant at the 0.1 level. The variable standard errors are relatively small for the non-indicator variables, though the adjusted r-squared value was only 0.22, meaning that this model accounts for only 22% of the variation in WBL index. Furthermore, the calculated mean squared error of prediction was 232.9637, which is acceptable but not optimal.", notation = "none",threeparttable = TRUE)
+
+``` 
+
+```{r, include = FALSE}
+library(car)
+```
+
+```{r, echo = FALSE}
+
+kableExtra::add_footnote(knitr::kable(as.data.frame(cor(complete%>%
+      dplyr::select(- SameRetirement))), caption = "Correlation Between Predictors"), label = "The only set of predictors with a worrying correlation is GDP and Total Population, which is to be expected. However, we decided that a value of 0.6 is not cause for taking out one of the variables before pursuing shrinkage methods.", notation = "none", threeparttable = TRUE)
+```
+
+```{r, echo = FALSE}
+kableExtra::add_footnote(knitr::kable(t(data.frame(vif(reg))), caption = "Predictor Variance Inflation Factors"), label = "The variance inflation factors are not concerning, as they are all between 1 and 2.", notation = "none", threeparttable = TRUE)
+
+```
+|       Since the linear regression model included all five predictors in our full model, we decided to explore if they had multicollinearity before moving forward. Table 2 above indicates each variable's correlation with the other predictors. Table 3 below displays the variance inflation factors for our linear model. Since there was a moderately strong correlation between GDP and Total Population, we chose to move on to shrinkage methods, utilizing Ridge and Lasso regression to minimize the error sum of squares and reduce variance. 
+  
+  
+```{r, echo = FALSE, warning= FALSE, fig.pos = 'h', fig.width=5,fig.height=4,fig.cap="This graph represents the mean-squared error for the log of each value of lambda using Ridge Regression. Through cross-validation, we found that the best lambda value for minimizing the mean-squared error was 4.14. This lambda brought the mean-squared error down to 211.3. This is an improvement from the linear model results, and all five predictors are still in the model, as ridge regression cannot shrink parameters to zero."}
+x <- model.matrix(reg)
+x <- x[,-1]
+y<- complete$WBLIndex
+rr <- glmnet(x, y, alpha = 0)
+set.seed(123)
+rr_cv <- cv.glmnet(x, y, alpha=0)
+plot(rr_cv)
+```
+
+  
+```{r, echo = FALSE, warning= FALSE}
+rr_coef<- matrix(coef(rr_cv, s = "lambda.min"))
+rrcoefs<- broom::tidy(rr_coef)
+rrcoefs$Predictor<- c("(Intercept)", "PaidMaternity", "SameRetirementYes", "GDP", "PercPopFemale", "TotalPop")
+coefr<- knitr::kable(rrcoefs, col.names = c("Estimate", "Predictor"), caption = "Ride Regression Coefficients")
+kableExtra::add_footnote(coefr, label = "The Ridge coefficient for each predictor is notably smaller than the OLS estimate.", notation= "none")
+```
+
+  
+```{r, echo = FALSE, fig.width=5,fig.height=4, fig.cap= "This graph represents the mean-squared error for the log of each value of lambda using Lasso Regression. Through cross validation, we concluded that the best lambda value was 0.6898. This lambda had a mean-squared error of 212.5. This is an improvement from the linear model results, though not quite as low as the ridge regression measure was. When analyzing the minimum lambda value, all five predictors are still in the model. However, the 1se lambda value of 2.7847 only includes 2 parameters: length of paid maternity leave and percent of the population that is female. Though, the mean-squared error of the model with lambda as 2.7847 would be notably higher, at 233.0."}
+lr <- glmnet(x, y)
+#plot(lr, label = TRUE)
+#plot(lr, xvar = "lambda", label = TRUE)
+set.seed(123)
+lr_cv <- cv.glmnet(x, y, alpha=1)
+plot(lr_cv)
+
+```
+
+  
+```{r, echo = FALSE,warning= FALSE}
+lr_coef<- matrix(coef(lr_cv, s = "lambda.min"))
+lrcoefs<- broom::tidy(lr_coef)
+lrcoefs$Predictor<- c("(Intercept)", "PaidMaternity", "SameRetirementYes", "GDP", "PercPopFemale", "TotalPop")
+coefl<- knitr::kable(lrcoefs, col.names = c("Estimate", "Predictor"), caption = "Lasso Regression Coefficients")
+kableExtra::add_footnote(coefl, label = "The Lasso coefficient for each predictor is notably smller than the OLS estimate.", notation= "none")
+```
+\newpage
+|       The second question of interest regarded classifying whether or not a woman can work in an industrial job in the same way a man can. When building the K Nearest Neighbors model, we accounted for the following variables: amount of days for paid paternity leave, WBL index, percent of women population, amount of days for paid maternity leave, whether the retirement age is the same for men and women, and country income level. To execute the model, two things were necessary; First, we performed a one-hot encoding for same retirement age, as this predictor provides only “Yes” and “No” values. Second, we performed a label encoding for income group and assigned values from 1 through 4 for each of the levels: "Low income", "Lower middle income", "Upper middle income", "High income". The data was divided in half for training and testing sets, and since the initial nearest neighbors were randomly selected, it was necessary to tune the parameters of the model to evaluate if the accuracy could increase. Here are the results:
+
+
+```{r, include = FALSE}
+data1 <- WBLfinal %>%
+  dplyr::select(Country, IndustrialJob, PaidPaternity, IncomeGroup, WBLIndex,
+         PercPopFemale, SameRetirement, PaidMaternity)
+
+data1 <- data1 %>%
+  drop_na()
+
+data1$IndustrialJob <- as.factor(data1$IndustrialJob)
+data1$IncomeGroup <- as.factor(data1$IncomeGroup)
+data1$SameRetirement <- as.factor(data1$SameRetirement)
+data1$PaidPaternity <- as.numeric(data1$PaidPaternity)
+data1$PaidMaternity <- as.numeric(data1$PaidMaternity)
+data1$WBLIndex <- as.numeric(data1$WBLIndex)
+data1$PercPopFemale <- as.numeric(data1$PercPopFemale)
+
+data1 <- data1 %>%
+  mutate(Retirement = coalesce(case_when( SameRetirement == "Yes" ~ 1,
+                                SameRetirement == "No" ~ 0)))
+
+data1 <- data1 %>%
+  mutate(Incomelevel = coalesce(case_when( IncomeGroup == "Low income" ~ 1,
+                                IncomeGroup == "Lower middle income" ~ 2,
+                                IncomeGroup == "Upper middle income" ~ 3,
+                                IncomeGroup == "High income" ~ 4)))
+
+
+train = data1[,c("PaidPaternity", "Incomelevel", "WBLIndex", "PercPopFemale", 
+                 "Retirement", "PaidMaternity")] # Our training set X
+cl = data1$IndustrialJob  # Our training set y
+
+test = tibble("PaidMaternity" = 50, "PaidPaternity" = 15, 
+              "Incomelevel" = 1, "Retirement" = 0,
+              "PerPopFemale" = 50.39125, "WLBIndex" = 100.000)
+knn(train, test, cl, k = 15)
+
+```
+
+
+```{r, echo = FALSE, warning=FALSE, fig.width=6,fig.height=4, fig.cap="This plot displays that through cross validation, the lowest error classification rate occurs when k nearest neighbors is 11. The value of this error classification rate is 0.3370787, which means that the correct classification rate is 0.6629213."}
+set.seed(12)
+training_pct <- .5
+Z = sample(nrow(data1), floor(training_pct*nrow(data1)))
+Xtrain = data1[Z, c("PaidPaternity", "Incomelevel", "WBLIndex", "PercPopFemale", 
+                 "Retirement", "PaidMaternity")]
+Ytrain = data1$IndustrialJob[Z]  # Our training set y 
+Xtest = data1[-Z, c("PaidPaternity", "Incomelevel", "WBLIndex", "PercPopFemale", 
+                 "Retirement", "PaidMaternity")]
+Yhat <- knn(Xtrain, Xtest, Ytrain, k = 15) 
+Ytest <- data1$IndustrialJob[-Z]
+conf_matrix <- table(Ytest, Yhat)
+#conf_matrix
+
+
+# Initialize data
+err_class <- rep(1:100)
+tpr <- rep(1:100)
+fpr <- rep(1:100)
+# run the loop
+for (k in 1:100){
+  Yhat <- knn(Xtrain, Xtest, Ytrain, k = k) 
+  err_class[k] <- mean(Yhat != Ytest) # The prediction is not correct
+  tpr[k] <- sum(Yhat == 1 & Ytest == 1) / sum(Ytest == 1) # TP/P
+  fpr[k] <- sum(Yhat == 1 & Ytest == 0) / sum(Ytest == 0) # FP/N
+}
+ggplot(tibble(err_class, k = 1:100), aes(x = k, y = err_class)) +
+  geom_line()+
+  ggtitle("Error Classification Rate by K")
+```
+
+```{r, include = FALSE}
+which.min(err_class) #gives the k
+err_class[which.min(err_class)] #Porb. of misclassification
+1 - err_class[which.min(err_class)] # Probability of a correct classification
+(table(Ytest, Yhat)[1, 1] + table(Ytest, Yhat)[2, 2])/(training_pct*nrow(data1)) #accuracy
+
+set.seed(12)
+Yhat <-  knn(Xtrain, Xtest, Ytrain, k = which.min(err_class))  #accuracy for the best k
+table(Ytest, Yhat)
+```
+|       Our second classification approach was the logistic regression model. It included the same variables as the KNN model: amount of days for paid paternity leave, WBL index, percent of women population, amount of days for paid maternity leave, same retirement age, and country income level. Similarly, data was divided in half (50%) for train and test sets. We opted to use the original data values and properly classify them based on their data classes. Here are the results for the logistic model on the training data set:
+
+```{r, echo = FALSE, fig.cap= "According to cross-validating our full logistic regression model, the lowest error rate occurred when the threshhold was 0.5225, with an error rate of 0.2696629. This means that the correct classification rate is 0.73033"}
+set.seed(12)
+Xtrain1 <- data1[Z,]
+Xtest1 <- data1[-Z,]
+logreg <- glm(as.factor(IndustrialJob) ~ PaidPaternity + as.factor(IncomeGroup) + 
+                WBLIndex + PercPopFemale + PaidMaternity + as.factor(SameRetirement), 
+              data = Xtrain1, family = "binomial")
+#summary(logreg)
+
+Prob <- predict(logreg, type = "response", newdata = Xtest1)
+threshold <- seq(0, 1, .0001)
+TPR <-  FPR <- err.rate <- rep(0, length(threshold))
+for (i in seq_along(threshold)) {
+Yhat1 <- rep(NA_character_, nrow(Xtest1)) 
+Yhat1 <-  ifelse(Prob >= threshold[[i]], "Yes", "No")
+err.rate[i] <- mean(Yhat1 != Xtest1$IndustrialJob)
+TPR[[i]] <- sum(Yhat1 == "Yes" & Xtest1$IndustrialJob == "Yes")/
+  sum(Xtest1$IndustrialJob == "Yes")
+FPR[[i]] <- sum(Yhat1 == "Yes" & Xtest1$IndustrialJob == "No")/
+  sum(Xtest1$IndustrialJob == "No")
+}
+ggplot(tibble(threshold, err.rate), aes(threshold, err.rate)) + 
+   geom_point()
+```
+
+
+```{r, include= FALSE}
+table(Xtest1$IndustrialJob)
+
+which.min(err.rate)
+
+min(err.rate)
+
+mean(Xtest1$IndustrialJob == "Yes") # % of industrial = yes
+
+threshold[which.min(err.rate)]
+
+Yhat <- ifelse(Prob >= threshold[which.min(err.rate)], "Yes", "No")
+table(Yhat, data1[Z,]$IndustrialJob)
+
+ggplot(tibble(TPR,FPR),
+       aes(FPR, TPR)) + 
+  geom_point()
+
+round(mean(Xtest1$IndustrialJob == "Yes"), 3)
+round(mean(Yhat == data1[Z,]$IndustrialJob), 3)
+round(mean(Yhat == "Yes"), 3)
+round(mean(data1[Z,]$IndustrialJob == "Yes"), 3)
+
+```
+\newpage
+
+|       Our third and fourth aproaches were Linear Discriminant Analysis (LDA) and Quadratic Discriminant Analysis (QDA). The initial LDA model included all the six variables used in the KNN and the logistic regression models. Since the variables (SameRetirement and IncomeGroup) are both categorical, we decided to convert those variables to a factor. The first step consisted of running LDA on our training dataset, then we used the testing data for prediction, and we finished by providing the confusion matrix above. However, while running the full model, we also found out that the removal of the variable IncomeGroup resulted in a higher classification rate compared to the full model. The model without IncomeGroup resulted in a classification rate of 0.708, which is more accurate than the KNN model but not as accurate as the logistic regression.
+|       The QDA model also included all six of the variables in this section. We followed the same steps as for the Linear Discriminant Analysis, used the same training data set to run QDA, used the same testing dataset for prediction and provided a confusion matrix above to show the performance of this model. Although the LDA performed better without the IncomeGroup variable, removing it had no effect on the QDA results. The full QDA model had a classification rate of 0.685. Thus, the linear discriminant analysis was more appropriate for this question, but the logistic regression was the overall best. 
+
+```{r, include = FALSE}
+LDA_result <- lda(as.factor(IndustrialJob) ~ PaidPaternity + 
+                  as.factor(IncomeGroup) + WBLIndex + PercPopFemale 
+                  + PaidMaternity + as.factor(SameRetirement), data = Xtrain1)
+LDA_result
+Predictedresult <- predict(LDA_result, data.frame(Xtest1))$class
+table(Xtest1$IndustrialJob, Predictedresult)
+# Prediction Correct Classification Rate
+ldares <- round(mean(Xtest1$IndustrialJob == Predictedresult), 3)
+ldares
+
+LDA_result5 <- lda(as.factor(IndustrialJob) ~ PaidPaternity + 
+                  WBLIndex + PercPopFemale
+                  + PaidMaternity + as.factor(SameRetirement), data = Xtrain1)
+LDA_result5
+Predictedresult5 <- predict(LDA_result5, data.frame(Xtest1))$class
+```
+
+```{r, echo = FALSE}
+knitr::kable(table(Xtest1$IndustrialJob, Predictedresult5), caption= "Confusion Matrix for LDA")
+```
+
+```{r, include = FALSE}
+# Prediction Correct Classification Rate
+ldares5 <- round(mean(Xtest1$IndustrialJob == Predictedresult5), 3)
+ldares5 
+
+
+qda_result <- qda(as.factor(IndustrialJob) ~ PaidPaternity + 
+                  as.factor(IncomeGroup) + WBLIndex + PercPopFemale 
+                  + PaidMaternity + as.factor(SameRetirement), data = Xtrain1)
+Predictedresult2 <- predict(qda_result, data.frame(Xtest1))$class
+table(Xtest1$IndustrialJob, Predictedresult2)
+qda_result <- round(mean(Xtest1$IndustrialJob == Predictedresult), 3)
+qda_result
+
+QDA_result5 <- qda(as.factor(IndustrialJob) ~ PaidPaternity + 
+                  WBLIndex + PercPopFemale
+                  + PaidMaternity + as.factor(SameRetirement), data = Xtrain1)
+QDA_result5
+PredictedresultQ5 <- predict(QDA_result5, data.frame(Xtest1))$class
+```
+
+```{r, echo=FALSE}
+knitr::kable(table(Xtest1$IndustrialJob, PredictedresultQ5), caption = "Confusion Matrix for QDA")
+```
+
+```{r, include = FALSE}
+# Prediction Correct Classification Rate
+qdares5 <- round(mean(Xtest1$IndustrialJob == PredictedresultQ5), 3)
+qdares5 
+
+```
+
+
+# Discussion
+
+|       In many nations, there have been significant legal rights advances for women in recent years. Other places continue to firmly establish limits on women's autonomy. We used the linear, ridge, and lasso approaches to test the best model and see if there are any links between a country's WBL Index and labor measures including paid maternity leave length, retirement age, country’s gross domestic product (GDP), the percentage of females in the population, and the total population. According to the article "Gender-Discriminatory Laws and Women's Economic Agency," the WBL Index appears to be positively correlated with paid maternity leave, but the researchers discovered that there is a strong correlation between the WBL Index and equal labor market outcomes rather than with retirement age (Htun et al., 2019).The paper also discovered that limitations on women's legal competence predict their possession of assets and involvement in the labor force, while discrimination at work, parental leave, and the magnitude and direction of salary gaps had positive associations with the WBL Index (Htun et al., 2019). The significance of defining and quantifying legal rights and their potential impacts as multidimensional effects is highlighted by these findings.
+|       For the first part of our study, we used different regression methods to discover from our data if there is a relationship between the WBI Index as a response variable and paid maternity leave as well as age of retirement as the response variables and which of these methods was best. The first method used to analyze the relationship was linear regression. Using linear regression, we discovered that of the predictor variables only paid maternity leave length, GDP, and percent of population that is female had any significant relationship with the WBL Index. These results correlate with the findings from the 2019 research paper mentioned above. Being that our data was collected in 2021, it is not surprising that over the span of only 2 years that there is still no relationship with the WBL Index and retirement age. What we did find that the above paper did not consider is the relationship to the response variable and the percent of women in each country. That predictor produced a strong p-value, similarly to how the paid maternity leave length predictor did, which leads to them both being very significant in predicting the WBL Index response variable.
+|       Our current model shows us that only about 22% of the variation in the WBL Index can be explained by our model with the 5 predictors. Using our linear regression model, we found the adjusted R-squared, BIC, and CP, both the adjusted R-squared and the CP found that our best model included all of the predictors while the model with the lowest BIC would only have two predictors, which are length of paid maternity leave and percent of the female population. These two variables being significant in correlation with the WBL Index makes sense as the WBL index examines how laws impact women at various stages of their careers, concentrating on those laws that are relevant in the major business city. Thus, the length of paid maternity leave as well as percent of women in the population would work as the best model.
+|       In order to determine the best predictors for the model when studying the WBL Index we also looked at the multicollinearity and variance reduction methods. Ridge regression and lasso regression were employed on the model to determine the best parameters through process of elimination. When we found the variance inflation factors and they were all around 1 indicating that there is minimum variance among the predictors. The predictors GDP and total population had higher VIF values, indicating that having the two predictors in the model will inflate the variances of all the other variables by around 2. The ridge regression that was conducted to help reduce the chances of the variance inflation being due to multicollinearity. Using ridge regression, all of the predictors are kept in our model, as shown in the above in Figure 1. For the lasso, only the paid maternity leave and the percent of female population were kept as supported by the BIC we calculated in from our linear model.
+|       For the linear model the calculated predicted mean squared error, which is the minimized sum of the squared errors, is 232.9637, for the ridge regression the predicted mean squared error is 211.3, and for lasso 212.5. The Ridge regression has the lowest mean squared error with 5 predictors. From the WBL Index, we also wanted to classify whether a woman can work in an industrial job in the same way a man can based on a country’s income level, length of paid paternity leave, length of paid maternity leave. While we are looking at classifying based on income level, length of paid paternity leave, length of paid maternity leave, the WBL Index, retirement age, and the percentage of females in the population, the article "Women in Male-Dominated Industries and Occupations (Quick Takes)" (n.d., 2021) discusses the already existing barriers that women face working in industrial jobs, such as societal expectations and beliefs about women's leadership abilities, pervasive stereotypes, such as that of the "caring mother" or office housekeeper (n.d., 2021). Also, according to a Pew Research Center study, 28% of women working in male-dominated industries have personally experienced sexual harassment, compared to 20% of women working in female-dominated industries (Parker, 2018.).
+|       To be able to classify whether a woman can work in an industrial job in the same way as a man based on six variables, we employed KNN classification, logistic regression, linear discriminant analysis, and quaratic discriminant analysis. Being that the response variable is a qualitative variable, with values of either no or yes as levels, we needed to find the values with the k-nearest neighbors to produce the best estimate of the response. As shown in the Figure 3 above, the calculated K is 11 which is somewhat large given how relatively small our dataset is. This indicates that or model might be too restrictive, meaning that the estimate of Y-hat (whether a woman can work in an industrial job in the same way as a man) may be based on data or points that are irrelevant. This is why we conducted a logistic regression, to be able to observe how the response variable responds to each of the predictor variables in our classification model. From the logistic regression model, we find that only the length of paternity leave and the WBL Index are significant; all the other predictors in our model do not have significance. This conclusion does correlate with our finding with the KNN classification method that we might have data in our model that is irrelevant to estimating the response variable.
+|       Finally, the LDA and QDA methods included the same six variables as KNN and logistic regression: amount of days for paid paternity leave, WBL index, percent of women population, amount of days for paid maternity leave, same retirement age, and country income level. However, the income variable was ultimately removed from the linear discriminant analysis. The LDA model performed better than the QDA model, with a classification rate of 0.703 while the QDA had a classification rate of only 0.685. Despite this, the best model for predicting whether or not a woman could work in an industrial job in the same was as a man was the logistic regression. 
+
+
+# Contrubutions and Recommendations
+
+|       For additional research on our first question, "Can we predict a country’s WBL (Women, Business and the Law) Index based on the length of paid maternity leave, retirement age, the country’s gross domestic product (GDP), the percentage of females in the population, and the total population?", we would recommend creating a model with predicting the WBL Index using paid maternity leave, percentage of female population, and the equal labor market outcomes variable, that was found to be significant in the 2019 research article, and observe if a better model, with a stronger predictive power can be produced. 
+|       For the second question, "Can we classify whether a woman can work in an industrial job in the same way a man can based on a country’s income level, length of paid paternity leave, length of paid maternity leave, the WBL Index, retirement age, and the percentage of females in the population?", we recommend that additional research be conducted looking at not collective country income level and paternity leave, but the income levels of women specifically in industrial jobs and other variables such as rate of sexual harassment and access to mentorship be added to the data to better classify whether or not a woman can work in an industrial job in the same way as a man.
+|       Our research contributes to the existing literature by bringing focus to the percentage of the population that are women and by providing analysis that can be utilized by many stakeholders. This study is targeted towards governments, officials, organizations, and activists who are interested in the research of women labor inequality. We believe that being able to predict a country's WBL Index as well as a woman's ability to work in a similar manner to a man is a rich source of information. Our findings can potentially provide a baseline to develop further studies that can lead to policy recommendations to fight gender inequality across the world.
+
+
+\newpage
+# References
+
+About Us. (n.d.). [Text/HTML]. World Bank. Retrieved December 8, 2022, from https://wbl.worldbank.org/en/aboutus
+
+Indicator: Gender in the Economy. (n.d.). Millennium Challenge Corporation. Retrieved December 8, 2022, from https://www.mcc.gov/who-we-select/indicator/gender-in-the-economy-indicator
+
+Nearly 2.4 Billion Women Globally Don’t Have Same Economic Rights as Men. (2022). Retrieved December 8, 2022, from https://www.worldbank.org/en/news/press-release/2022/03/01/nearly-2-4-billion-women-globally-don-t-have-same-economic-rights-as-men
+
+Women in Male-Dominated Industries and Occupations (Quick Take). (n.d.). Catalyst. Retrieved December 8, 2022, from https://www.catalyst.org/research/women-in-male-dominated-industries-and-occupations/
+
+Htun, M., Jensenius, F., & Nelson-Núñez, J. (2019). Gender-Discriminatory Laws and Women’s Economic Agency. Social Politics, 26. https://doi.org/10.1093/sp/jxy042
+
+Parker, K. (2018). Women in majority-male workplaces report higher rates of gender discrimination. Pew Research Center. Retrieved December 8, 2022, from https://www.pewresearch.org/fact-tank/2018/03/07/women-in-majority-male-workplaces-report-higher-rates-of-gender-discrimination/
+
+
+\newpage
+# Appendix
+
+Daniel Bernal:
+I collaborated with the data collection and preprocessing such as adjusting the format, filtering, and correction of invalid entries. I developed the data, methods, and ethics discussion, and coordinated the development and maintenance of the GitHub repository. Contributed with the KNN and Logistic Regression models and their respective outputs and overview. I also obtained additional variables to add onto the original dataset.
+
+Dalia Habiby:
+I collected the original dataset as well as the total population and percent female population variables. I also assisted in data cleaning and combining. Primarily, I worked with Frankie on the linear, lasso, and ridge regression analyses. I wrote the results section of the report and formatted the body of the report and all graphs and tables in Rmarkdown. 
+
+Karene Matoka:
+I worked with Daniel on classification analysis (second research question). We both worked on KNN and logistic regression and created graphs to showcase our results. I worked on the LDA analysis on my own. I tried running LDA after removing one variable to see if the classification rate would increase. I also wrote the executive summary as well as reported our findings under the results section.  
+
+
+Frankie Tyndall:
+I wrote up the discussion and recommendations, as well as cited references from articles pertaining to the results that were found when studying the WBL Index dataset. I also helped with data cleaning procedures on the dataset such as removing unwanted variables, duplicated information, and NA values. Finally, I specifically worked on the linear, lasso, and ridge regression methods to get the necessary information needed for our results and discussion/recommendation sections.
