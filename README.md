@@ -29,8 +29,7 @@ preventing women from fully participating in the labor force, 86 countries restr
 to women, and 95 countries where equal pay is not guaranteed (“Nearly 2.4 Billion”, 2022).
 Those data were made available by the World Bank through their Women, Business, and Law (WBL)
 project. The goal behind this initiative was to inform and provide “data on the laws and regulations
-that affect women’s economic opportunity”(“About Us”). Since 2009, they have been collecting
-data and researching how to improve women’s economic opportunities and empowerment. Our
+that affect women’s economic opportunity”(“About Us”). The World Banks' Women, Business, and the Law (WBL) developed an index to measure whether women and men have equal right across diverse domains. Since its establishment in 1971, not all countries have improved their scores at the same rate. It indicates that there are structural conditions (economic, political, social and more) that might influence the legal process. This study intend to further 
 study was conducted using their dataset published in 2021.
 
 (1) We were first interested in knowing if we could predict a country’s WBL (Women, Business and
